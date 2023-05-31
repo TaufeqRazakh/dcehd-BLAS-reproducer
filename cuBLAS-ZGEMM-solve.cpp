@@ -4,8 +4,10 @@
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
 #include <complex>
+#include <cuComplex.h>
 #define M 32
-#define N 42875
+#define N 32
+#define K 42875
 #define IDX2C(i,j,ld) (((j)*(ld))+(i))
 
 #define cudaErrorCheck(ans, cause)              \
@@ -47,13 +49,17 @@ inline void cublasAssert(cublasStatus_t code, const std::string& cause, const ch
 
 int main(int argc, char **argv)
 {
-  std::cout << "Starting complex double matmul of size lXn and nXm with cuBlas";
-  int i, j;  
+  std::cout << "Starting complex double matmul with matrices A (42,875 x 32) and B a(42,875 x 32) to produce a matrix C (16 x 16)" << std::endl;
+  int i, j;
   int m = 16;
   int n = 16;
   int k = 42875;
-  const std::complex<double> cDvol = std::complex<double>(3);
- 
+  const std::complex<double> alpha = std::complex<double>(3);
+  const std::complex<double> beta  = std::complex<double>(7);
+  int lda = 32;
+  int ldb = 32;
+  int ldc = 16;
+
   // Set and define cuda linear algebra handles
   cudaError_t cudaStat;
   cublasStatus_t stat;
@@ -68,25 +74,25 @@ int main(int argc, char **argv)
   std::complex<double>* devPtrA;
   std::complex<double>* A = 0;
   // Assign A on host
-  A = (std::complex<double>*)malloc (32 * 42875 * sizeof (*A));
+  A = (std::complex<double>*)malloc (M * K * sizeof (*A));
   if (!A) {
       printf ("host memory allocation failed");
       return EXIT_FAILURE;
   }
   // Initialize A
-  for (j = 1; j <= N; j++) {
+  for (j = 1; j <= K; j++) {
       for (i = 1; i <= M; i++) {
-          A[IDX2C(i,j,M)] = (float)(i * N + j + 1);
+          A[IDX2C(i,j,M)] = (float)(i * K + j + 1);
       }
   }
   // Create memory for A on device
-  cudaStat = cudaMalloc ((void**)&devPtrA, M*N*sizeof(*A));
+  cudaStat = cudaMalloc ((void**)&devPtrA, M*K*sizeof(*A));
   if (cudaStat != cudaSuccess) {
       printf ("device memory allocation failed");
       return EXIT_FAILURE;
   }
   // Move date from host to device
-  stat = cublasSetMatrix (M, N, sizeof(*A), A, M, devPtrA, M);
+  stat = cublasSetMatrix (M, K, sizeof(*A), A, M, devPtrA, M);
   if (stat != CUBLAS_STATUS_SUCCESS) {
       printf ("data download failed");
       cudaFree (devPtrA);
@@ -97,22 +103,22 @@ int main(int argc, char **argv)
   // Define B matrix
   std::complex<double>* devPtrB;
   std::complex<double>* B = 0;
-  B = (std::complex<double>*)malloc (32 * 42875 * sizeof (*B));
+  B = (std::complex<double>*)malloc (N * K * sizeof (*B));
   if (!B) {
       printf ("host memory allocation failed");
       return EXIT_FAILURE;
   }
-  for (j = 1; j <= N; j++) {
-      for (i = 1; i <= M; i++) {
-          B[IDX2C(i,j,M)] = (float)(i * N + j + 1);
+  for (j = 1; j <= K; j++) {
+      for (i = 1; i <= N; i++) {
+          B[IDX2C(i,j,N)] = (float)(i * K + j + 1);
       }
   }
-  cudaStat = cudaMalloc ((void**)&devPtrB, M*N*sizeof(*B));
+  cudaStat = cudaMalloc ((void**)&devPtrB, N*K*sizeof(*B));
   if (cudaStat != cudaSuccess) {
       printf ("device memory allocation failed");
       return EXIT_FAILURE;
   }
-  stat = cublasSetMatrix (M, N, sizeof(*B), B, M, devPtrB, M);
+  stat = cublasSetMatrix (N, K, sizeof(*B), B, N, devPtrB, N);
   if (stat != CUBLAS_STATUS_SUCCESS) {
       printf ("data download failed");
       cudaFree (devPtrB);
@@ -123,37 +129,16 @@ int main(int argc, char **argv)
   // Define resulting C matrix
   std::complex<double>* devPtrC;
   std::complex<double>* C = 0;
-  C = (std::complex<double>*)malloc (16 * 42875 * sizeof (*B));
-  if (!B) {
-      printf ("host memory allocation failed");
-      return EXIT_FAILURE;
-  }
-  for (j = 1; j <= 16; j++) {
-      for (i = 1; i <= M; i++) {
-          B[IDX2C(i,j,M)] = (float)(i * N + j + 1);
-      }
-  }
-  cudaStat = cudaMalloc ((void**)&devPtrC, M*N*sizeof(*C));
+  C = (std::complex<double>*)malloc (m * n * sizeof (*C));
+  
+  cudaStat = cudaMalloc ((void**)&devPtrC, m*n*sizeof(*C));
   if (cudaStat != cudaSuccess) {
       printf ("device memory allocation failed");
       return EXIT_FAILURE;
   }
-  stat = cublasSetMatrix (M, N, sizeof(*C), C, M, devPtrB, M);
-  if (stat != CUBLAS_STATUS_SUCCESS) {
-      printf ("data download failed");
-      cudaFree (devPtrC);
-      cublasDestroy(h_cublas);
-      return EXIT_FAILURE;
-  }
 
-  // Use CUDA handles here
-  // the original blas function was
-  //cublasErrorCheck(qmcplusplus::cuBLAS::gemm(cuda_linear_algebra_handles.h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, nlumo,
-  //                                             Next, Nxyz, &cDvol, psi_core_ptr, Norb, psi0_core_ptr + nlumo, Norb,
-  //                                             &czero, ovlp_m_ptr, nlumo),
-  // The problem BLAS call
-  return cublasZgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k, reinterpret_cast<const cuDoubleComplex*>(&cDvol), reinterpret_cast<const cuDoubleComplex*>(A), lda, reinterpret_cast<const cuDoubleComplex*>(B + nlumo), ldb,
-                     reinterpret_cast<const cuDoubleComplex*>(cDvol), reinterpret_cast<const cuDoubleComplex*>(C), ldc);
+  return cublasZgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k, reinterpret_cast<const cuDoubleComplex*>(&alpha), reinterpret_cast<const cuDoubleComplex*>(A), lda, reinterpret_cast<const cuDoubleComplex*>(B + 16), ldb,
+                     reinterpret_cast<const cuDoubleComplex*>(&beta), reinterpret_cast<cuDoubleComplex*>(C), ldc);
   
   // wait for stream to complete
   cudaDeviceSynchronize();
