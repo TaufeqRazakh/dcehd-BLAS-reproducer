@@ -3,24 +3,59 @@
 #include <math.h>
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
+#include <complex>
 #define M 32
 #define N 42875
+#define IDX2C(i,j,ld) (((j)*(ld))+(i))
+
+#define cudaErrorCheck(ans, cause)              \
+{                                               \
+  cudaAssert((ans), cause, __FILE__, __LINE__); \
+}
 
 #define cublasErrorCheck(ans, cause)              \
 {                                                 \
   cublasAssert((ans), cause, __FILE__, __LINE__); \
 }
 
+inline void cudaAssert(cudaError_t code, const std::string& cause, const char* filename, int line, bool abort = true)
+{
+  if (code != cudaSuccess)
+  {
+    std::ostringstream err;
+    err << "cudaAssert: " << cudaGetErrorName(code) << " " << cudaGetErrorString(code) << ", file " << filename
+        << ", line " << line << std::endl
+        << cause << std::endl;
+    std::cerr << err.str();
+    if (abort)
+      throw std::runtime_error(cause);
+  }
+}
+
+inline void cublasAssert(cublasStatus_t code, const std::string& cause, const char* file, int line, bool abort = true)
+{
+  if (code != CUBLAS_STATUS_SUCCESS)
+  {
+    std::ostringstream err;
+    err << "cublasAssert: from file " << file << " , line " << line << std::endl
+        << cause << std::endl;
+    std::cerr << err.str();
+    //if (abort) exit(code);
+    throw std::runtime_error(cause);
+  }
+}
+
 int main(int argc, char **argv)
 {
-	std::cout << "Starting complex double matmul of size lXn and nXm with cuBlas";
-  
+  std::cout << "Starting complex double matmul of size lXn and nXm with cuBlas";
+  int i, j;  
   int m = 16;
   int n = 16;
   int k = 42875;
   const std::complex<double> cDvol = std::complex<double>(3);
-  
+ 
   // Set and define cuda linear algebra handles
+  cudaError_t cudaStat;
   cublasStatus_t stat;
   cudaStream_t hstream;
   cublasHandle_t h_cublas;
@@ -41,7 +76,7 @@ int main(int argc, char **argv)
   // Initialize A
   for (j = 1; j <= N; j++) {
       for (i = 1; i <= M; i++) {
-          A[IDX2F(i,j,M)] = (float)((i-1) * N + j);
+          A[IDX2C(i,j,M)] = (float)(i * N + j + 1);
       }
   }
   // Create memory for A on device
@@ -69,7 +104,7 @@ int main(int argc, char **argv)
   }
   for (j = 1; j <= N; j++) {
       for (i = 1; i <= M; i++) {
-          B[IDX2F(i,j,M)] = (float)((i-1) * N + j);
+          B[IDX2C(i,j,M)] = (float)(i * N + j + 1);
       }
   }
   cudaStat = cudaMalloc ((void**)&devPtrB, M*N*sizeof(*B));
@@ -95,7 +130,7 @@ int main(int argc, char **argv)
   }
   for (j = 1; j <= 16; j++) {
       for (i = 1; i <= M; i++) {
-          B[IDX2F(i,j,M)] = (float)((i-1) * N + j);
+          B[IDX2C(i,j,M)] = (float)(i * N + j + 1);
       }
   }
   cudaStat = cudaMalloc ((void**)&devPtrC, M*N*sizeof(*C));
@@ -117,8 +152,11 @@ int main(int argc, char **argv)
   //                                             Next, Nxyz, &cDvol, psi_core_ptr, Norb, psi0_core_ptr + nlumo, Norb,
   //                                             &czero, ovlp_m_ptr, nlumo),
   // The problem BLAS call
-  return cublasZgemm(h_cublas, transa, transb, m, n, k, castNativeType(alpha), castNativeType(A), lda, castNativeType(B + nlumo), ldb,
-                     castNativeType(beta), castNativeType(C), ldc);
+  return cublasZgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k, reinterpret_cast<const cuDoubleComplex*>(&cDvol), reinterpret_cast<const cuDoubleComplex*>(A), lda, reinterpret_cast<const cuDoubleComplex*>(B + nlumo), ldb,
+                     reinterpret_cast<const cuDoubleComplex*>(cDvol), reinterpret_cast<const cuDoubleComplex*>(C), ldc);
+  
+  // wait for stream to complete
+  cudaDeviceSynchronize();
 
   // Destroy CUDA handles
 
