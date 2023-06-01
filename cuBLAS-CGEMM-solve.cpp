@@ -49,13 +49,13 @@ inline void cublasAssert(cublasStatus_t code, const std::string& cause, const ch
 
 int main(int argc, char **argv)
 {
-  std::cout << "Starting complex double matmul with matrices A (42,875 x 32) and B a(42,875 x 32) to produce a matrix C (16 x 16)" << std::endl;
+  std::cout << "Starting complex float matmul with matrices A (42,875 x 32) and B a(42,875 x 32) to produce a matrix C (16 x 16)" << std::endl;
   int i, j;
   int m = 16;
   int n = 16;
   int k = 42875;
-  const std::complex<double> alpha = std::complex<double>(3);
-  const std::complex<double> beta  = std::complex<double>(7);
+  const std::complex<float> alpha = std::complex<float>(3);
+  const std::complex<float> beta  = std::complex<float>(7);
   int lda = 32;
   int ldb = 32;
   int ldc = 16;
@@ -71,10 +71,10 @@ int main(int argc, char **argv)
   cublasErrorCheck(cublasSetStream(h_cublas, hstream), "cublasSetStream failed!");
 
   // Define A matrix
-  std::complex<double>* devPtrA;
-  std::complex<double>* A = 0;
+  std::complex<float>* devPtrA;
+  std::complex<float>* A = 0;
   // Assign A on host
-  A = (std::complex<double>*)malloc (M * K * sizeof (*A));
+  A = (std::complex<float>*)malloc (M * K * sizeof (*A));
   if (!A) {
       printf ("host memory allocation failed");
       return EXIT_FAILURE;
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   // Initialize A
   for (j = 1; j <= K; j++) {
       for (i = 1; i <= M; i++) {
-          A[IDX2C(i,j,M)] = (double)(i * K + j + 1);
+          A[IDX2C(i,j,M)] = (float)(i * K + j + 1);
       }
   }
   // Create memory for A on device
@@ -101,16 +101,16 @@ int main(int argc, char **argv)
   }
 
   // Define B matrix
-  std::complex<double>* devPtrB;
-  std::complex<double>* B = 0;
-  B = (std::complex<double>*)malloc (N * K * sizeof (*B));
+  std::complex<float>* devPtrB;
+  std::complex<float>* B = 0;
+  B = (std::complex<float>*)malloc (N * K * sizeof (*B));
   if (!B) {
       printf ("host memory allocation failed");
       return EXIT_FAILURE;
   }
   for (j = 1; j <= K; j++) {
       for (i = 1; i <= N; i++) {
-          B[IDX2C(i,j,N)] = (double)(i * K + j + 1);
+          B[IDX2C(i,j,N)] = (float)(i * K + j + 1);
       }
   }
   cudaStat = cudaMalloc ((void**)&devPtrB, N*K*sizeof(*B));
@@ -127,9 +127,9 @@ int main(int argc, char **argv)
   }
 
   // Define resulting C matrix
-  std::complex<double>* devPtrC;
-  std::complex<double>* C = 0;
-  C = (std::complex<double>*)malloc (m * n * sizeof (*C));
+  std::complex<float>* devPtrC;
+  std::complex<float>* C = 0;
+  C = (std::complex<float>*)malloc (m * n * sizeof (*C));
   
   cudaStat = cudaMalloc ((void**)&devPtrC, m*n*sizeof(*C));
   if (cudaStat != cudaSuccess) {
@@ -137,8 +137,8 @@ int main(int argc, char **argv)
       return EXIT_FAILURE;
   }
 
-  return cublasZgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k, reinterpret_cast<const cuDoubleComplex*>(&alpha), reinterpret_cast<const cuDoubleComplex*>(A), lda, reinterpret_cast<const cuDoubleComplex*>(B + 16), ldb,
-                     reinterpret_cast<const cuDoubleComplex*>(&beta), reinterpret_cast<cuDoubleComplex*>(C), ldc);
+  return cublasCgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k, reinterpret_cast<const cuComplex*>(&alpha), reinterpret_cast<const cuComplex*>(A), lda, reinterpret_cast<const cuComplex*>(B + 16), ldb,
+                     reinterpret_cast<const cuComplex*>(&beta), reinterpret_cast<cuComplex*>(C), ldc);
   
   // wait for stream to complete
   cudaDeviceSynchronize();

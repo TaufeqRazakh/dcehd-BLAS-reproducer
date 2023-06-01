@@ -15,5 +15,12 @@ if(NOT TARGET CUDA::cublas)
         "Target CUDA::cublas not found.")
   endif()
 
-add_executable (dcehd-BLAS-reproducer cuBLAS-ZGEMM-solve.cpp)
-target_link_libraries (dcehd-BLAS-reproducer LINK_PUBLIC CUDA::cudart CUDA::cublas CUDA::cusolver)
+add_library(cuda-essential INTERFACE)
+target_link_libraries (cuda-essential INTERFACE CUDA::cudart CUDA::cublas CUDA::cusolver) 
+
+add_executable (zgemm-test cuBLAS-ZGEMM-solve.cpp)
+target_link_libraries (zgemm-test cuda-essential) 
+
+add_executable (cgemm-test cuBLAS-CGEMM-solve.cpp)
+target_link_libraries (cgemm-test cuda-essential)
+
