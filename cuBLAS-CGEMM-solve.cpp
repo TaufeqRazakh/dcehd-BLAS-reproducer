@@ -142,7 +142,7 @@ int main(int argc, char **argv)
   
   // wait for stream to complete
   cudaDeviceSynchronize();
-  std::cout << "Blas call has finied" << std::endl;
+  std::cout << "Blas call has finished" << std::endl;
 
   // Destroy CUDA handles
 
