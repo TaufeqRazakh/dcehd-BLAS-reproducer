@@ -2,7 +2,7 @@
 ```
 mkdir build_artifact
 cd build_artifact
-cmake -DCMAKE_CXX_COMPILER=clang++
+cmake -DCMAKE_CXX_COMPILER=clang++ ..
 make
 ```
 #### Run Steps
