@@ -8,7 +8,6 @@
 #define M 32
 #define N 32
 #define K 42875
-#define IDX2C(i,j,ld) (((j)*(ld))+(i))
 
 #define cudaErrorCheck(ans, cause)              \
 {                                               \
@@ -80,9 +79,9 @@ int main(int argc, char **argv)
       return EXIT_FAILURE;
   }
   // Initialize A
-  for (j = 1; j <= K; j++) {
-      for (i = 1; i <= M; i++) {
-          A[IDX2C(i,j,M)] = (float)(i * K + j + 1);
+  for (j = 0; j <= K; j++) {
+      for (i = 0; i <= M; i++) {
+          A[j * K + i] = std::complex<double>(2,j * K + i);
       }
   }
   // Create memory for A on device
@@ -108,9 +107,9 @@ int main(int argc, char **argv)
       printf ("host memory allocation failed");
       return EXIT_FAILURE;
   }
-  for (j = 1; j <= K; j++) {
-      for (i = 1; i <= N; i++) {
-          B[IDX2C(i,j,N)] = (float)(i * K + j + 1);
+  for (j = 0; j <= K; j++) {
+      for (i = 0; i <= M; i++) {
+          B[j * K + i] = std::complex<double>(2,j * K + i);
       }
   }
   cudaStat = cudaMalloc ((void**)&devPtrB, N*K*sizeof(*B));
