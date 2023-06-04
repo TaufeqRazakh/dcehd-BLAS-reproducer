@@ -14,4 +14,5 @@ make
 #### Issues
 
 + `zgemm-test` does not print message after BLAS call
-+ `cgemm-test` fails with malloc failure 
++ `cgemm-test` does not print message after BLAS call
+
