@@ -137,11 +137,10 @@ int main(int argc, char **argv) {
                      reinterpret_cast<cuDoubleComplex *>(C), ldc);
 
   // wait for stream to complete
-  cudaDeviceSynchronize();
+  cudaErrorCheck(cudaDeviceSynchronize(), "cudaDeviceSynchronize failed!");
   std::cout << "Blas call has finished" << std::endl;
 
   // Destroy CUDA handles
-
   cublasErrorCheck(cublasDestroy(h_cublas), "cublasDestroy failed!");
   cudaErrorCheck(cudaStreamDestroy(hstream), "cudaStreamDestroy failed!");
 }
