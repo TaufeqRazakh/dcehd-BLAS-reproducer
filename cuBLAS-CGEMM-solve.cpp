@@ -131,10 +131,10 @@ int main(int argc, char **argv) {
 
   cublasCgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k,
                      reinterpret_cast<const cuComplex *>(&alpha),
-                     reinterpret_cast<const cuComplex *>(A), lda,
-                     reinterpret_cast<const cuComplex *>(B + 16), ldb,
+                     reinterpret_cast<const cuComplex *>(devPtrA), lda,
+                     reinterpret_cast<const cuComplex *>(devPtrB + 16), ldb,
                      reinterpret_cast<const cuComplex *>(&beta),
-                     reinterpret_cast<cuComplex *>(C), ldc);
+                     reinterpret_cast<cuComplex *>(devPtrC), ldc);
 
   // wait for stream to complete
   cudaErrorCheck(cudaDeviceSynchronize(), "cudaDeviceSynchronize failed!");
