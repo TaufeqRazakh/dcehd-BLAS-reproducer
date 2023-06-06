@@ -24,5 +24,3 @@ target_link_libraries (zgemm-test cuda-essential)
 add_executable (cgemm-test cuBLAS-CGEMM-solve.cpp)
 target_link_libraries (cgemm-test cuda-essential)
 
-add_executable (simplified-cgemm-test simplified-cuBLAS-CGEMM-solve.cpp)
-target_link_libraries (simplified-cgemm-test cuda-essential)

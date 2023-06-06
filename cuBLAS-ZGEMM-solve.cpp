@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  return cublasZgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k,
+  cublasZgemm(h_cublas, CUBLAS_OP_N, CUBLAS_OP_C, m, n, k,
                      reinterpret_cast<const cuDoubleComplex *>(&alpha),
                      reinterpret_cast<const cuDoubleComplex *>(A), lda,
                      reinterpret_cast<const cuDoubleComplex *>(B + 16), ldb,
