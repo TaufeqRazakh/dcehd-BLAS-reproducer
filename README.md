@@ -13,6 +13,8 @@ make
 
 #### Issues
 
-+ `zgemm-test` does not print message after BLAS call
-+ `cgemm-test` does not print message after BLAS call
++ `zgemm-test` <br/> cudaErrorIllegalAddress an illegal memory access was encountered, file /home/razakh/dcehd-BLAS-reproducer/cuBLAS-ZGEMM-solve.cpp, line 140  <br/>
+cudaDeviceSynchronize failed!
++ `cgemm-test`  <br/> cudaAssert: cudaErrorIllegalAddress an illegal memory access was encountered, file /home/razakh/dcehd-BLAS-reproducer/cuBLAS-CGEMM-solve.cpp, line 140  <br/>
+cudaDeviceSynchronize failed!
 
